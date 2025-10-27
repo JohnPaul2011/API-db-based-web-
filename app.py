@@ -3,6 +3,7 @@ import uuid, time
 from gevent import pywsgi
 
 app = Flask(__name__)
+
 storage = {}
 
 @app.route('/<user_id>/post/<data>', methods=['GET', 'POST'])
