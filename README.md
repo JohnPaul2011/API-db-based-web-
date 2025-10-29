@@ -1,102 +1,80 @@
 
----
-
-🌐 DataPulse — Mini API Database
+# 🌐 DataPulse — Mini API Database
 
 DataPulse is a lightweight API-based data storage service.
 Post, fetch, and timestamp your data — instantly ⚡
 
 
----
+## 🚀 Features
 
-🚀 Features
+* 🗂️ Store data per user ID
 
-🗂️ Store data per user ID
+* ⏰ Automatic timestamps
 
-⏰ Automatic timestamps
+* 🔍 Retrieve all stored entries
 
-🔍 Retrieve all stored entries
+* ⚙️ Fast, memory-only, no database needed
 
-⚙️ Fast, memory-only, no database needed
-
-☁️ Render-ready with Gevent
+* ☁️ Render-ready with Gevent
 
 
+## 🧩 API Endpoints
 
----
-
-🧩 API Endpoints
-
-➕ Add Data
-
-GET /<id>/post/<data>
-
+*  Add Data
+```
+website.com/<id>/post/<data>
+```
 Example
-
-/123/post/HelloWorld
-
+```
+website.com/123/post/HelloWorld
+```
 Response
-
+```
 {
   "status": "saved",
   "unique_id": "a1b2c3d4",
   "data": "HelloWorld",
   "time": "2025-10-27 20:30:00"
 }
-
+```
 
 ---
 
-📦 Get Data
-
-GET /<id>/get/
-
+* 📦 Get Data
+```Ruby
+website.com/<id>/get/
+```
 Example
-
-/123/get/
-
+```Ruby
+website.com/123/get/
+```
 Response
-
+```Ruby
 {
   "a1b2c3d4": {
     "data": "HelloWorld",
     "time": "2025-10-27 20:30:00"
   }
 }
-
-
+```
 ---
 
-🧰 Local Setup
+### 🧰 Local Setup
 
 Install dependencies
-
+```
 pip install flask gevent
-
-Run locally
-
+```
+### Run locally
+```
 python app.py
+```
 
+## ☁️ Render Deployment Ready
 
----
+connect our or your modified code to Render 🚀
 
-☁️ Render Deployment
-
-Procfile
-
-web: python app.py
-
-requirements.txt
-
-flask
-gevent
-
-Then push to GitHub and connect to Render 🚀
-
-
----
-
-💡 Why DataPulse?
+# 💡 Why DataPulse?
 
 A micro “API database” for developers who need
 a quick place to drop and fetch data — without any real database setup.
