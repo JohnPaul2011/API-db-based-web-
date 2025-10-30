@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 storage = {}
 
-site = os.environ.get("API_KEY", "0.0.0.0")
+site = os.environ.get("Web", "0.0.0.0")
 interval = 5  # seconds
 
 def auto_ping():
