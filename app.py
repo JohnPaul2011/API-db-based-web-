@@ -1,38 +1,43 @@
 from flask import Flask, jsonify, request, Response
-import time, threading, os
+import time, threading, os, requests
 from gevent import pywsgi
-from ping3 import ping
 
 app = Flask(__name__)
 
 storage, creds, tokens, ping_log = {}, {}, {}, []
 
-site = os.environ.get("Web")
-
-print(site)
-
-interval = 5  # seconds
+site = os.environ.get("Web", "https://your-app.onrender.com")
+interval = 5
 
 def unique_id():
-    return hex(time.time_ns())[2:]  # fast unique hex ID
+    return hex(time.time_ns())[2:]
 
 def auto_ping():
     while True:
-        latency = ping(site)
-        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-        ping_log.append({
-            "site": site,
-            "latency_ms": None if latency is None else round(latency * 1000, 2),
-            "time": timestamp
-        })
-        print("pinging", site)
+        try:
+            start = time.time()
+            r = requests.get(site, timeout=3)
+            latency = (time.time() - start) * 1000
+            print("pinging", site, "->", round(latency, 2), "ms")
+            ping_log.append({
+                "site": site,
+                "status": r.status_code,
+                "latency_ms": round(latency, 2),
+                "time": time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+        except Exception as e:
+            ping_log.append({
+                "site": site,
+                "error": str(e),
+                "time": time.strftime('%Y-%m-%d %H:%M:%S')
+            })
         time.sleep(interval)
 
 @app.route('/')
 def index():
     return "Status --> OK"
 
-@app.route('/register/', methods=['GET'])
+@app.route('/register/')
 def register_user():
     user = request.args.get('user')
     password = request.args.get('password')
@@ -44,34 +49,27 @@ def register_user():
     token = unique_id()[:12]
     tokens[token] = user
     storage[user] = {}
-    return Response(
-        jsonify({"status": "registered", "user": user, "token": token}).data,
-        mimetype="application/json"
-    )
+    return jsonify({"status": "registered", "user": user, "token": token})
 
-@app.route('/u/<token>/post/<data>', methods=['GET', 'POST'])
+@app.route('/u/<token>/post/<data>')
 def post_data(token, data):
     if token not in tokens:
         return jsonify({"error": "invalid token"})
-    user_id = tokens[token]
+    user = tokens[token]
     uid = unique_id()[:8]
-    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    storage[user_id][uid] = {"data": data, "time": timestamp}
-    return jsonify({
-        "status": "saved",
-        "user": user_id,
-        "unique_id": uid,
-        "data": data,
-        "time": timestamp
-    })
+    storage[user][uid] = {"data": data, "time": time.strftime('%Y-%m-%d %H:%M:%S')}
+    return jsonify({"status": "saved", "user": user, "unique_id": uid, "data": data})
 
-@app.route('/u/<token>/get', methods=['GET'])
+@app.route('/u/<token>/get')
 def get_data(token):
     if token not in tokens:
         return jsonify({"error": "invalid token"})
-    user_id = tokens[token]
-    return jsonify(storage.get(user_id, {}))
+    user = tokens[token]
+    return jsonify(storage.get(user, {}))
 
+@app.route('/pinglog')
+def get_ping_log():
+    return jsonify(ping_log[-20:])
 
 if __name__ == '__main__':
     threading.Thread(target=auto_ping, daemon=True).start()
