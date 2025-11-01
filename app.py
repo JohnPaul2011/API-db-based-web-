@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 storage, creds, tokens, ping_log = {}, {}, {}, []
 
-site = os.environ.get("Web", "https://your-app.onrender.com")
+site = os.environ.get("Web")
 interval = 5
 
 def unique_id():
