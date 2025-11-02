@@ -2,15 +2,6 @@ from flask import Flask, jsonify, request, Response
 import time, threading, os, requests
 from gevent import pywsgi
 
-app = Flask(__name__)
-
-storage, creds, tokens, ping_log = {}, {}, {}, []
-
-site = os.environ.get("Web")
-interval = 5
-
-print(site)
-
 def unique_id():
     return hex(time.time_ns())[2:]
 
@@ -34,6 +25,17 @@ def auto_ping():
                 "time": time.strftime('%Y-%m-%d %H:%M:%S')
             })
         time.sleep(interval)
+
+threading.Thread(target=auto_ping, daemon=True).start()
+
+app = Flask(__name__)
+
+storage, creds, tokens, ping_log = {}, {}, {}, []
+
+site = os.environ.get("Web")
+interval = 5
+
+print(site)
 
 @app.route('/')
 def index():
@@ -74,7 +76,6 @@ def get_ping_log():
     return jsonify(ping_log[-20:])
 
 if __name__ == '__main__':
-    threading.Thread(target=auto_ping, daemon=True).start()
     port = int(os.environ.get('PORT', 10000))
     server = pywsgi.WSGIServer(('0.0.0.0', port), app)
     print(f"Running on port {port}...")
