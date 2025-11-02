@@ -33,7 +33,7 @@ def auto_ping():
             })
         time.sleep(interval)
 
-@app.before_first_request
+@app.before_request
 def start_ping_thread():
     threading.Thread(target=auto_ping, daemon=True).start()
     print(f"Started ping thread for {site}")
