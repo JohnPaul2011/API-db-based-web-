@@ -2,6 +2,13 @@ from flask import Flask, jsonify, request, Response
 import time, threading, os, requests
 from gevent import pywsgi
 
+app = Flask(__name__)
+
+storage, creds, tokens, ping_log = {}, {}, {}, []
+
+site = os.environ.get("Web")
+interval = 5
+
 def unique_id():
     return hex(time.time_ns())[2:]
 
@@ -26,16 +33,10 @@ def auto_ping():
             })
         time.sleep(interval)
 
-threading.Thread(target=auto_ping, daemon=True).start()
-
-app = Flask(__name__)
-
-storage, creds, tokens, ping_log = {}, {}, {}, []
-
-site = os.environ.get("Web")
-interval = 5
-
-print(site)
+@app.before_first_request
+def start_ping_thread():
+    threading.Thread(target=auto_ping, daemon=True).start()
+    print(f"Started ping thread for {site}")
 
 @app.route('/')
 def index():
