@@ -1,4 +1,4 @@
 flask
 gevent
-ping3
 gunicorn
+requests
