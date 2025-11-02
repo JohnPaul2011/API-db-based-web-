@@ -9,6 +9,8 @@ storage, creds, tokens, ping_log = {}, {}, {}, []
 site = os.environ.get("Web")
 interval = 5
 
+print(site)
+
 def unique_id():
     return hex(time.time_ns())[2:]
 
