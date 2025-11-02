@@ -73,6 +73,7 @@ def get_ping_log():
 
 if __name__ == '__main__':
     threading.Thread(target=auto_ping, daemon=True).start()
-    server = pywsgi.WSGIServer(('0.0.0.0', 10000), app)
-    print("Running on port 10000...")
+    port = int(os.environ.get('PORT', 10000))
+    server = pywsgi.WSGIServer(('0.0.0.0', port), app)
+    print(f"Running on port {port}...")
     server.serve_forever()
