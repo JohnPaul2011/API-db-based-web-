@@ -1,42 +1,40 @@
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request
 import time, threading, os, requests
 from gevent import pywsgi
 
 app = Flask(__name__)
 
 storage, creds, tokens, ping_log = {}, {}, {}, []
-
-site = os.environ.get("Web")
+base_url = os.environ.get("Web")
 interval = 5
 
 def unique_id():
     return hex(time.time_ns())[2:]
 
+@app.route('/_internal_ping')
+def _internal_ping():
+    return "ping"
+
 def auto_ping():
+    target = f"{base_url}/_internal_ping"
     while True:
         try:
             start = time.time()
-            r = requests.get(site, timeout=3)
+            r = requests.get(target, timeout=3)
             latency = (time.time() - start) * 1000
-            print("pinging", site, "->", round(latency, 2), "ms")
             ping_log.append({
-                "site": site,
+                "site": target,
                 "status": r.status_code,
                 "latency_ms": round(latency, 2),
                 "time": time.strftime('%Y-%m-%d %H:%M:%S')
             })
         except Exception as e:
             ping_log.append({
-                "site": site,
+                "site": target,
                 "error": str(e),
                 "time": time.strftime('%Y-%m-%d %H:%M:%S')
             })
         time.sleep(interval)
-
-@app.before_request
-def start_ping_thread():
-    threading.Thread(target=auto_ping, daemon=True).start()
-    print(f"Started ping thread for {site}")
 
 @app.route('/')
 def index():
@@ -77,7 +75,7 @@ def get_ping_log():
     return jsonify(ping_log[-20:])
 
 if __name__ == '__main__':
+    threading.Thread(target=auto_ping, daemon=True).start()
     port = int(os.environ.get('PORT', 10000))
     server = pywsgi.WSGIServer(('0.0.0.0', port), app)
-    print(f"Running on port {port}...")
     server.serve_forever()
