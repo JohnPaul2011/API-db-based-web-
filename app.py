@@ -1,40 +1,14 @@
 from flask import Flask, jsonify, request
-import time, threading, os, requests
+import time, os
 from gevent import pywsgi
 
 app = Flask(__name__)
 
-storage, creds, tokens, ping_log = {}, {}, {}, []
+storage, creds, tokens = {}, {}, {}
 base_url = os.environ.get("Web")
-interval = 5
 
 def unique_id():
     return hex(time.time_ns())[2:]
-
-@app.route('/_internal_ping')
-def _internal_ping():
-    return "ping"
-
-def auto_ping():
-    target = f"{base_url}/_internal_ping"
-    while True:
-        try:
-            start = time.time()
-            r = requests.get(target, timeout=3)
-            latency = (time.time() - start) * 1000
-            ping_log.append({
-                "site": target,
-                "status": r.status_code,
-                "latency_ms": round(latency, 2),
-                "time": time.strftime('%Y-%m-%d %H:%M:%S')
-            })
-        except Exception as e:
-            ping_log.append({
-                "site": target,
-                "error": str(e),
-                "time": time.strftime('%Y-%m-%d %H:%M:%S')
-            })
-        time.sleep(interval)
 
 @app.route('/')
 def index():
@@ -54,28 +28,25 @@ def register_user():
     storage[user] = {}
     return jsonify({"status": "registered", "user": user, "token": token})
 
-@app.route('/u/<token>/post/<data>')
-def post_data(token, data):
+@app.route('/u/<token>/<room_id>/post/<data>')
+def post_data(token, room_id, data):
     if token not in tokens:
         return jsonify({"error": "invalid token"})
     user = tokens[token]
+    if room_id not in storage[user]:
+        storage[user][room_id] = {}
     uid = unique_id()[:8]
-    storage[user][uid] = {"data": data, "time": time.strftime('%Y-%m-%d %H:%M:%S')}
-    return jsonify({"status": "saved", "user": user, "unique_id": uid, "data": data})
+    storage[user][room_id][uid] = {"data": data, "time": time.strftime('%Y-%m-%d %H:%M:%S')}
+    return jsonify({"status": "saved", "user": user, "room": room_id, "id": uid})
 
-@app.route('/u/<token>/get')
-def get_data(token):
+@app.route('/u/<token>/<room_id>/get')
+def get_data(token, room_id):
     if token not in tokens:
         return jsonify({"error": "invalid token"})
     user = tokens[token]
-    return jsonify(storage.get(user, {}))
-
-@app.route('/pinglog')
-def get_ping_log():
-    return jsonify(ping_log[-20:])
+    return jsonify(storage[user].get(room_id, {}))
 
 if __name__ == '__main__':
-    threading.Thread(target=auto_ping, daemon=True).start()
     port = int(os.environ.get('PORT', 10000))
     server = pywsgi.WSGIServer(('0.0.0.0', port), app)
     server.serve_forever()
